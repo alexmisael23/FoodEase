@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <application
+        android:allowBackup="true"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/backup_rules"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.FoodEase"
+        tools:targetApi="31">
+        <activity
+            android:name=".MostrarActivityBebidas"
+            android:exported="false" />
+        <activity
+            android:name=".MostrarActivityBebidasFrapes"
+            android:exported="false" />
+        <activity
+            android:name=".MostrarActivityBebidasCafe"
+            android:exported="false" />
+        <activity
+            android:name=".MostrarActivityBebidasJugoEmbotellado"
+            android:exported="false" />
+        <activity
+            android:name=".MostrarActivityBebidasEmbotellados"
+            android:exported="false" />
+        <activity
+            android:name=".MostrarActivity"
+            android:exported="false" />
+        <activity
+            android:name=".MostrarActivityTacos"
+            android:exported="false" />
+        <activity
+            android:name=".MostrarActivityEmpanadas"
+            android:exported="false" />
+        <activity
+            android:name=".MostrarActivityCaldos"
+            android:exported="false" />
+        <activity
+            android:name=".MostrarActivityCoctel"
+            android:exported="false" />
+
+        <activity
+            android:name=".PagoActivity"
+            android:exported="false" />
+        <activity
+            android:name=".CarritoActivity"
+            android:exported="false" />
+        <activity
+            android:name=".SalonActivity"
+            android:exported="false" />
+        <activity
+            android:name=".MesasActivity"
+            android:exported="false" />
+        <activity
+            android:name=".BebidasActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ComidasActivity"
+            android:exported="false" />
+        <activity
+            android:name=".MenuActivity"
+            android:exported="false" />
+        <activity android:name=".DeleteAccountActivity" />
+        <activity android:name=".UpdatePasswordActivity" />
+        <activity android:name=".CheckEmailActivity" />
+        <activity android:name=".AccountRecoveryActivity" />
+        <activity
+            android:name=".MainActivity"
+            android:theme="@style/Theme.Main" />
+        <activity android:name=".SignUpActivity" />
+        <activity
+            android:name=".SignInActivity"
+            android:exported="true" />
+        <activity
+            android:name=".HomeActivity"
+            android:exported="true"
+            android:screenOrientation="portrait">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <meta-data
+            android:name="preloaded_fonts"
+            android:resource="@array/preloaded_fonts" />
+        <meta-data
+            android:name="com.google.firebase.components:com.google.firebase.firestore"
+            android:value="com.google.firebase.firestore.FirestoreRegistrar" />
+    </application>
+
+</manifest>
