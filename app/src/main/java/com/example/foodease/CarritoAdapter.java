@@ -1,44 +1,25 @@
 package com.example.foodease;
 
-
-import android.app.AlertDialog;
-import android.content.Context;
-import android.content.DialogInterface;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
+import android.widget.ImageButton;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.firebase.ui.firestore.FirestoreRecyclerAdapter;
-import com.firebase.ui.firestore.FirestoreRecyclerOptions;
-
-import java.util.ArrayList;
 import java.util.List;
 
+public class CarritoAdapter extends RecyclerView.Adapter<CarritoAdapter.ViewHolder> {
 
-public class CarritoAdapter extends FirestoreRecyclerAdapter<comidas, CarritoAdapter.ViewHolder> {
+    private List<comidas> carritoItems;
+    private OnItemClickListener listener;
 
-    private final Context context;
-    private final FirestoreHelper firestoreHelper;
-    private int position;
-
-    public CarritoAdapter(@NonNull FirestoreRecyclerOptions<comidas> options, Context context, FirestoreHelper firestoreHelper) {
-        super(options);
-        this.context = context;
-        this.firestoreHelper = firestoreHelper;
-    }
-
-    public List<comidas> getCarritoList() {
-        List<comidas> carritoList = new ArrayList<>();
-        for (int i = 0; i < getItemCount(); i++) {
-            carritoList.add(getItem(i));
-        }
-        return carritoList;
+    // Constructor que recibe la lista de elementos del carrito
+    public CarritoAdapter(List<comidas> carritoItems, OnItemClickListener listener) {
+        this.carritoItems = carritoItems;
+        this.listener = listener;  // Inicializa el listener
     }
 
     @NonNull
@@ -48,124 +29,68 @@ public class CarritoAdapter extends FirestoreRecyclerAdapter<comidas, CarritoAda
         return new ViewHolder(view);
     }
 
-    public void eliminarItem(int position) {
-        getSnapshots().getSnapshot(position).getReference().update("eliminado", true);
+    @Override
+    public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
+        comidas item = carritoItems.get(position);
+
+        // Configurar los TextViews con la información del elemento del carrito
+        holder.textViewNombre.setText(item.getNombreComida());
+        holder.textViewPrecio.setText(String.valueOf(item.getPrecio()));
+        holder.textViewcantidad.setText(String.valueOf(item.getCantidad()));
+        holder.textViewtipo.setText(item.getTipoComida());
+        // Añadir más configuraciones según tus necesidades
+
+        //Configurar el click del boton de eliminacion
+        holder.btnEliminar.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (listener != null) {
+                    listener.onDeleteItemClick(position);
+                }
+            }
+        });
     }
 
-    public void limpiarCarrito() {
-        //Elimina todos los elementos del conjunto de datos
-        getSnapshots().clear();
-        //Notifica al adaptador que los datos han cambiado
-        notifyDataSetChanged();
+    //Interfaz para manejar eventos de click
+    public interface OnItemClickListener {
+        void onDeleteItemClick(int position);
     }
 
-    public class ViewHolder extends RecyclerView.ViewHolder {
-        TextView textViewnombre;
-        TextView textViewprecio;
+
+    @Override
+    public int getItemCount() {
+        return carritoItems.size();
+    }
+
+    public static class ViewHolder extends RecyclerView.ViewHolder {
+        TextView textViewtipo;
+        TextView textViewNombre;
+        TextView textViewPrecio;
         TextView textViewcantidad;
-        Button masCantidad;
-        Button menosCantidad;
-        Button btnEnviarCarrito;
+
+        ImageButton btnEliminar;
+        OnItemClickListener listener;
 
         public ViewHolder(@NonNull View itemView) {
             super(itemView);
+            textViewNombre = itemView.findViewById(R.id.textViewnombre);
+            textViewPrecio = itemView.findViewById(R.id.textViewprecio);
+            textViewtipo = itemView.findViewById(R.id.textViewtipo);
+            textViewcantidad = itemView.findViewById(R.id.textViewcantidad);// Añadir más TextViews según tus necesidades
 
-            //final int position = getAbsoluteAdapterPosition();
-            //Inicia las visitas aquí
-            textViewnombre = itemView.findViewById(R.id.textViewnombre);
-            textViewprecio = itemView.findViewById(R.id.textViewprecio);
-            textViewcantidad = itemView.findViewById(R.id.textViewcantidad);
-            masCantidad = itemView.findViewById(R.id.masCantidad);
-            menosCantidad = itemView.findViewById(R.id.menosCantidad);
-            btnEnviarCarrito = itemView.findViewById(R.id.buttonEnviarCarrito);
-
-            // Agregar clic largo para eliminar visualmente el producto
-            itemView.setOnLongClickListener(new View.OnLongClickListener() {
+            //Configura el elemento de click para el boton de eliminación
+            btnEliminar = itemView.findViewById(R.id.btnEliminar);
+            btnEliminar.setOnClickListener(new View.OnClickListener() {
                 @Override
-                public boolean onLongClick(View view) {
-                    int position = getAbsoluteAdapterPosition();
-                    if (position != RecyclerView.NO_POSITION) {
-                        //Mostrar un cuadro de dialogo de confirmación
-                        new AlertDialog.Builder(context)
-                                .setTitle("Eliminar del carrito")
-                                .setMessage("¿Estas seguro de que quieres eliminar del carrito?")
-                                        .setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
-                                            @Override
-                                            public void onClick(DialogInterface dialogInterface, int i) {
-                                                //Lamar al metodo eliminarItem aquí
-                                                eliminarItem(position);
-                                            }
-                                        })
-                                                .setNegativeButton(android.R.string.no, null)
-                                                        .show();
-                        return true; // Indica que el clic largo ha sido manejado
+                public void onClick(View view) {
+                    if (listener != null) {
+                        int position = getAdapterPosition();
+                        if (position != RecyclerView.NO_POSITION) {
+                            listener.onDeleteItemClick(position);
+                        }
                     }
-                    return false;
-                }
-            });
-
-            //Agregar click al boton "Enviar Pedido"
-            btnEnviarCarrito.setOnClickListener(new View.OnClickListener() {
-               @Override
-               public void onClick(View view) {
-                   //Obtener la lista de productos del carrito
-                   List<comidas> carrito = getSnapshots();
-                   //Guardar el pedido en Firestore usando la clase FirestoreHelper
-                   firestoreHelper.guardarPedido(carrito);
-                   //Mostrar un mensaje de éxito y limpiar el carrito
-                   Toast.makeText(context, "Pedido enviado con éxito", Toast.LENGTH_SHORT).show();
-                   limpiarCarrito();
-               }
-            });
-
-            //Agregar lógica para incrementar la cantidad
-            masCantidad.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View view) {
-                    //Obtener la posición actual
-                    int position = getBindingAdapterPosition();
-                    //Incrementar la cantidad en el modelo
-                    int nuevaCantidad = Math.max(0, getItem(position).getCantidad() - 1);
-
-                    //Actualizar en Firestore si es necesario
-                    getSnapshots().getSnapshot(position).getReference().update("cantidad", nuevaCantidad);
-
-                    //Actualiza el modelo local
-                    getItem(position).setCantidad(nuevaCantidad);
-                }
-            });
-
-            //Agregar lógica para decrementar la cantidad
-            menosCantidad.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View view) {
-                    // Asegurarse de que la cantidad no sea negativa
-                    int nuevaCantidad = Math.max(0, getItem(position).getCantidad() - 1);
-
-                    // Actualizar en Firestore
-                    getSnapshots().getSnapshot(position).getReference().update("cantidad", nuevaCantidad);
-
-                    // Actualizar en el modelo local
-                    getItem(position).setCantidad(nuevaCantidad);
                 }
             });
         }
     }
-
-    @Override
-    protected void onBindViewHolder(@NonNull ViewHolder holder, int position, @NonNull comidas model) {
-        //Configura la vistas del elemento del carrito con los datos de modelo
-        if (!model.isEliminado()) {
-            holder.itemView.setVisibility(View.VISIBLE);
-            holder.textViewnombre.setText(model.getNombreComida());
-            holder.textViewprecio.setText(String.valueOf(model.getPrecio()));
-            holder.textViewcantidad.setText(String.valueOf(model.getCantidad()));
-
-
-        } else {
-            //Si el elemnto esta marcado como eliminado, oculta la vista
-            holder.itemView.setVisibility(View.GONE);
-        }
-    }
-
 }

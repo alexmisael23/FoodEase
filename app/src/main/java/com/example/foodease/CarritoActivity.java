@@ -9,76 +9,63 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.firebase.ui.firestore.FirestoreRecyclerOptions;
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.CollectionReference;
+import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.Query;
 
+import java.util.HashMap;
 import java.util.List;
 
-
 public class CarritoActivity extends AppCompatActivity {
-    private RecyclerView recyclerView;
-    private CarritoAdapter carritoAdapter;
+    RecyclerView recyclerViewCarrito;
     private Button btnEnviarCarrito;
-
-    private FirebaseFirestore mFirestore;
-    private FirestoreHelper firestoreHelper;
+    private CarritoAdapter carritoAdapter;
+    FirebaseFirestore mFirestore;
+    FirebaseAuth mAuth;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_carrito);
 
-        //Inicializa firebasehelper
-        firestoreHelper = new FirestoreHelper();
+        mFirestore = FirebaseFirestore.getInstance();
+        mAuth = FirebaseAuth.getInstance();
 
-        //Botones de menu
+        // Botones de menú
+        recyclerViewCarrito = findViewById(R.id.RecyclerViewCarrito);
+        recyclerViewCarrito.setLayoutManager(new LinearLayoutManager(this));
+
         ImageButton ImagenButtonComida = findViewById(R.id.ImagenButtonCom);
         ImageButton imageButtonMenu = findViewById(R.id.imageButtonMen);
         ImageButton imageButtonMesas = findViewById(R.id.imageButtonMes);
         ImageButton imageButtonBebidas = findViewById(R.id.imageButtonBeb);
         ImageButton imageButtonS = findViewById(R.id.imageButtonS);
 
-        recyclerView = findViewById(R.id.RecyclerViewCarrito);
-        recyclerView.setLayoutManager(new LinearLayoutManager(this));
+        // Obtén la lista de elementos del carrito desde el intent
+        List<comidas> carritoItems = (List<comidas>) getIntent().getSerializableExtra("carritoItems");
 
-        //Inicializar el boton Enviar Carrito
-        btnEnviarCarrito = findViewById(R.id.buttonEnviarCarrito);
-
-        mFirestore = FirebaseFirestore.getInstance();
-        Query query = mFirestore.collection("comidas");
-
-        FirestoreRecyclerOptions<comidas> options = new FirestoreRecyclerOptions.Builder<comidas>()
-                .setQuery(query, comidas.class)
-                .build();
-
-        carritoAdapter = new CarritoAdapter(options, this, new FirestoreHelper());
-        recyclerView.setAdapter(carritoAdapter);
-
-        // Configurar ItemTouchHelper
-        ItemTouchHelper.SimpleCallback simpleCallback = new ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT | ItemTouchHelper.RIGHT) {
+        // Crea una instancia de CarritoAdapter proporcionando la lista y un OnItemClickListener
+        carritoAdapter = new CarritoAdapter(carritoItems, new CarritoAdapter.OnItemClickListener() {
             @Override
-            public boolean onMove(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder, @NonNull RecyclerView.ViewHolder target) {
-                return false;
+            public void onDeleteItemClick(int position) {
+                // Elimina el elemento del carrito cuando se hace clic en el botón de eliminación
+                carritoItems.remove(position);
+                carritoAdapter.notifyItemRemoved(position);
+                carritoAdapter.notifyItemRangeChanged(position, carritoItems.size());
             }
+        });
 
-            @Override
-            public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int direction) {
-                // No es necesario implementar aquí, ya que el clic largo maneja la eliminación
-                int position = viewHolder.getAdapterPosition();
-                carritoAdapter.eliminarItem(position);
-            }
-        };
+        // Configura el RecyclerView con el adaptador
+        recyclerViewCarrito.setAdapter(carritoAdapter);
 
-        ItemTouchHelper itemTouchHelper = new ItemTouchHelper(simpleCallback);
-        itemTouchHelper.attachToRecyclerView(recyclerView);
-
-
-        //Redirecciones
+        // Redirecciones
         imageButtonS.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -120,39 +107,51 @@ public class CarritoActivity extends AppCompatActivity {
             }
         });
 
+        // Inicializa el botón para enviar el carrito
+        btnEnviarCarrito = findViewById(R.id.btnEnviarCarrito);
         btnEnviarCarrito.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onClick(View view) {
-                //Obten la lista de productos en el carrito
-                List<comidas> carrito = carritoAdapter.getCarritoList();
-
-                //Verifica si el carrito esta vacio
-                if (carrito.isEmpty()) {
-                    firestoreHelper.guardarPedido(carrito);
-                    Toast.makeText(CarritoActivity.this, "Pedido enviado con exito", Toast.LENGTH_SHORT).show();
-                }else {
-                    //Mostrar un mensaje indicado que el carrito está vacio
-                    Toast.makeText(CarritoActivity.this, "El carrito esta vacio", Toast.LENGTH_SHORT).show();
-                }
+            public void onClick(View v) {
+                enviarCarritoAlFirestore(carritoItems);
             }
         });
     }
 
-    //Método para abrir una actividad
-    private void abrirActividad(Class<?> actividad) {
-        Intent intent = new Intent(CarritoActivity.this, actividad);
-        startActivity(intent);
-    }
+    private void enviarCarritoAlFirestore(List<comidas> carritoItems) {
+        FirebaseUser user = mAuth.getCurrentUser();
 
-    @Override
-    protected void onStart() {
-        super.onStart();
-        carritoAdapter.startListening();
-    }
+        if (user != null) {
+            // Obtiene el ID del usuario autenticado
+            String userId = user.getUid();
 
-    @Override
-    protected void onStop() {
-        super.onStop();
-        carritoAdapter.stopListening();
+            // Crea una nueva colección en Firestore para los carritos
+            // Puedes cambiar "carritos" por el nombre que desees
+            CollectionReference carritosCollection = mFirestore.collection("carrito");
+
+            // Crea un nuevo documento para el carrito del usuario
+            DocumentReference carritoDocument = carritosCollection.document(userId);
+
+            // Guarda los elementos del carrito en el documento
+            carritoDocument.set(new HashMap<String, Object>() {{
+                        put("carritoItems", carritoItems);
+                    }})
+                    .addOnSuccessListener(new OnSuccessListener<Void>() {
+                        @Override
+                        public void onSuccess(Void aVoid) {
+                            // Éxito al guardar en Firestore
+                            Toast.makeText(CarritoActivity.this, "Carrito enviado exitosamente", Toast.LENGTH_SHORT).show();
+                        }
+                    })
+                    .addOnFailureListener(new OnFailureListener() {
+                        @Override
+                        public void onFailure(@NonNull Exception e) {
+                            // Error al guardar en Firestore
+                            Toast.makeText(CarritoActivity.this, "Error al enviar el carrito", Toast.LENGTH_SHORT).show();
+                        }
+                    });
+        } else {
+            // El usuario no está autenticado, debes manejar esta situación según tus necesidades
+            Toast.makeText(CarritoActivity.this, "Usuario no autenticado", Toast.LENGTH_SHORT).show();
+        }
     }
 }

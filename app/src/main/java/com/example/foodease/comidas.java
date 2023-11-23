@@ -1,6 +1,8 @@
 package com.example.foodease;
 
-public class comidas {
+import java.io.Serializable;
+
+public class comidas implements Serializable {
 
     private String nombreComida;
     private Integer precio;

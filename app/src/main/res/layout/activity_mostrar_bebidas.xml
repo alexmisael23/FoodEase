@@ -10,6 +10,12 @@
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclermostrarBebidas"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
+        android:layout_height="655dp"
         android:background="#FFFFFF" />
+
+    <Button
+        android:id="@+id/buttonVerCarritoBebidas"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Button" />
 </LinearLayout>

@@ -12,9 +12,34 @@ import com.firebase.ui.firestore.FirestoreRecyclerAdapter;
 import com.firebase.ui.firestore.FirestoreRecyclerOptions;
 import com.google.firebase.firestore.DocumentSnapshot;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class comidaAdapter extends FirestoreRecyclerAdapter<comidas, comidaAdapter.ViewHolder> {
 
+    private List<comidas> carritoItems = new ArrayList<>();
+
     private OnItemClickListener mListener;
+
+    // Métodos para manejar el carrito
+    public List<comidas> getCarritoItems() {
+        return carritoItems;
+    }
+
+    public void clearCarrito() {
+        carritoItems.clear();
+        notifyDataSetChanged();
+    }
+
+    // Método para agregar elementos al carrito
+    public void addToCart(int position) {
+        DocumentSnapshot documentSnapshot = getSnapshots().getSnapshot(position);
+        comidas comidasSeleccionada = documentSnapshot.toObject(comidas.class);
+        if (comidasSeleccionada != null) {
+            carritoItems.add(comidasSeleccionada);
+            notifyDataSetChanged(); // Notificar al RecyclerView que los datos han cambiado
+        }
+    }
 
     public interface OnItemClickListener {
         void onItemClick(DocumentSnapshot documentSnapshot, int position);

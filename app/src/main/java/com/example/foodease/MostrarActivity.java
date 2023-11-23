@@ -1,6 +1,9 @@
 package com.example.foodease;
 
+import android.content.Intent;
 import android.os.Bundle;
+import android.view.View;
+import android.widget.Button;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -12,10 +15,13 @@ import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.Query;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
 public class MostrarActivity extends AppCompatActivity {
+
+    Button buttonVerCarrito;
 
     RecyclerView recyclerViewComidas;
     comidaAdapter mAdapter;
@@ -26,6 +32,7 @@ public class MostrarActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_mostrar);
 
+        buttonVerCarrito = findViewById(R.id.buttonVerCarrito);
         recyclerViewComidas = findViewById(R.id.recyclermostrarcomidas);
         recyclerViewComidas.setLayoutManager(new LinearLayoutManager(this));
         mFirestore = FirebaseFirestore.getInstance();
@@ -40,14 +47,26 @@ public class MostrarActivity extends AppCompatActivity {
         recyclerViewComidas.setAdapter(mAdapter);
 
         // Configura el OnItemClickListener y agrega productos al carrito
+        // Configura el OnItemClickListener y agrega productos al carrito
         mAdapter.setOnItemClickListener(new comidaAdapter.OnItemClickListener() {
             @Override
             public void onItemClick(DocumentSnapshot documentSnapshot, int position) {
-                comidas comidasSeleccionada = documentSnapshot.toObject(comidas.class);
-                if (comidasSeleccionada != null) {
-                    //carritoItems.add(comidasSeleccionada);
-                    Toast.makeText(MostrarActivity.this, "Producto agregado al carrito", Toast.LENGTH_SHORT).show();
-                }
+                mAdapter.addToCart(position);
+                Toast.makeText(MostrarActivity.this, "Producto agregado al carrito", Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        // Agrega un botón o acción para ver el carrito
+        buttonVerCarrito.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                // Obtén los elementos del carrito
+                List<comidas> carritoItems = mAdapter.getCarritoItems();
+
+                // Puedes pasar la lista de elementos del carrito a CarritoActivity
+                Intent intent = new Intent(MostrarActivity.this, CarritoActivity.class);
+                intent.putExtra("carritoItems", (Serializable) carritoItems);
+                startActivity(intent);
             }
         });
 
